@@ -13,22 +13,15 @@ import {
   Text,
   useToast,
 } from '@chakra-ui/react';
+import { useAniList } from '../hooks/useAniList';
 import AnimeCard from './AnimeCard';
+import type { AnimeEntry } from '../lib/models';
 
-type Anime = {
-  id: number | string;
-  title: string;
-  coverImage?: string;
-  genres?: string[];
-  episodes?: number | null;
-  startDate?: { year?: number; month?: number; day?: number } | null;
-  votes?: { up: number; down: number };
-};
-
-export default function AddAnimeModal({ isOpen, onClose, onAdd }: { isOpen: boolean; onClose: () => void; onAdd: (anime: Anime) => void; }) {
+export default function AddAnimeModal({ isOpen, onClose, onAdd }: { isOpen: boolean; onClose: () => void; onAdd: (anime: AnimeEntry) => void; }) {
   const [q, setQ] = useState('');
-  const [results, setResults] = useState<Anime[]>([]);
+  const [results, setResults] = useState<AnimeEntry[]>([]);
   const [loading, setLoading] = useState(false);
+  const { searchAnime } = useAniList();
   const toast = useToast();
 
   async function search() {
@@ -36,52 +29,18 @@ export default function AddAnimeModal({ isOpen, onClose, onAdd }: { isOpen: bool
       toast({ title: 'Enter a search term', status: 'warning' });
       return;
     }
+
     setLoading(true);
-    const query = `
-      query ($search: String) {
-        Page(perPage: 10) {
-          media(search: $search, type: ANIME) {
-            id
-            title {
-              romaji
-              english
-            }
-            coverImage {
-              large
-            }
-            genres
-            episodes
-            startDate {
-              year
-              month
-              day
-            }
-          }
-        }
-      }
-    `;
+
     try {
-      const resp = await fetch('/api/anilist', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query, variables: { search: q } }),
-      });
-      const data = await resp.json();
-      const items = data?.data?.Page?.media || [];
-      const mapped: Anime[] = items.map((r: any) => ({
-        id: r.id,
-        title: r.title?.english || r.title?.romaji || 'Unknown',
-        coverImage: r.coverImage?.large,
-        genres: r.genres || [],
-        episodes: r.episodes,
-        startDate: r.startDate,
-        votes: { up: 0, down: 0 },
-      }));
-      setResults(mapped);
-    } catch (err) {
-      toast({ title: 'Error searching', status: 'error' });
+      const items = await searchAnime(q);
+      setResults(items);
+    } catch (error) {
+      toast({ title: 'Error searching AniList', status: 'error' });
+      setResults([]);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   return (
@@ -95,20 +54,22 @@ export default function AddAnimeModal({ isOpen, onClose, onAdd }: { isOpen: bool
               placeholder="Search anime by title"
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && search()}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  void search();
+                }
+              }}
             />
-            <Button onClick={search} isLoading={loading}>
-              Search
-            </Button>
+            <Button onClick={() => void search()} isLoading={loading}>Search</Button>
             {loading && <Spinner mx="auto" />}
             {!loading && results.length === 0 && q && <Text color="gray.500">No results found</Text>}
             <VStack width="100%" align="stretch" spacing={3}>
-              {results.map((r) => (
+              {results.map((anime) => (
                 <AnimeCard
-                  key={r.id}
-                  anime={r}
+                  key={anime.id}
+                  anime={anime}
                   onAdd={() => {
-                    onAdd(r);
+                    onAdd(anime);
                     onClose();
                   }}
                 />

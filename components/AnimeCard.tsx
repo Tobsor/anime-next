@@ -10,18 +10,9 @@ import {
   Button,
   Spacer,
 } from '@chakra-ui/react';
+import type { AnimeEntry } from '../lib/models';
 
-type Anime = {
-  id: number | string;
-  title: string;
-  coverImage?: string;
-  genres?: string[];
-  episodes?: number | null;
-  startDate?: { year?: number; month?: number; day?: number } | null;
-  votes?: { up: number; down: number };
-};
-
-export default function AnimeCard({ anime, onAdd, onUp, onDown, onComplete, onUndo, userVote }: { anime: Anime; onAdd?: () => void; onUp?: () => void; onDown?: () => void; onComplete?: () => void; onUndo?: () => void; userVote?: 'up' | 'down' | null; }) {
+export default function AnimeCard({ anime, onAdd, onUp, onDown, onComplete, onUndo, userVote }: { anime: AnimeEntry; onAdd?: () => void; onUp?: () => void; onDown?: () => void; onComplete?: () => void; onUndo?: () => void; userVote?: 'up' | 'down' | null; }) {
   return (
     <Box borderWidth="1px" borderRadius="md" overflow="hidden" p={3} bg="white">
       <HStack align="start">
