@@ -28,10 +28,9 @@ A Next.js + React web app that lets groups of people collaboratively decide what
 - Password-protected admin interface
 - Manage groups, users, and view raw store data
 - Add/edit/delete groups and users
-- JSON editor for advanced modifications
 
 💾 **Data Persistence**
-- JSON-file based store (data/store.json)
+- Prisma-backed PostgreSQL store via `DATABASE_URL`
 - API routes handle all read/write operations
 - Votes and list state persist across sessions
 
@@ -61,7 +60,7 @@ The app will be available at `http://localhost:3000`
 
 2. **Admin Panel**: Navigate to `http://localhost:3000/admin`
    - Default password: `admin`
-   - Manage groups, users, and view the raw JSON store
+   - Manage groups, users, and raw Prisma-backed data
    - Add new groups or users as needed
 
 ## Usage Guide
@@ -101,32 +100,31 @@ The app will be available at `http://localhost:3000`
    - Changes are saved with the "Save All Changes" button
 
 3. **View Raw Data**
-   - Switch to the "Raw JSON" tab
-   - Edit the store as JSON directly
-   - Click "Save JSON" to persist changes
+   - Review the current seeded data and edit the store through the admin UI
+   - Save changes to persist them to the Prisma-backed database
 
 ## Project Structure
 
 ```
 anime-next/
-├── pages/
-│   ├── _app.tsx                    # Chakra UI provider setup
-│   ├── [group].tsx                 # Dynamic group page
-│   ├── admin.tsx                   # Admin dashboard
+├── app/
+│   ├── [group]/page.tsx            # Dynamic group page
+│   ├── admin/page.tsx             # Admin dashboard
 │   └── api/
-│       ├── anilist.ts              # Proxy for AniList GraphQL queries
-│       ├── admin/store.ts          # Store read/write API with password auth
-│       └── group/[group].ts        # Group-specific actions (add, vote, complete, undo)
+│       ├── anilist/route.ts        # Proxy for AniList GraphQL queries
+│       ├── admin/store/route.ts    # Store read/write API with password auth
+│       └── group/[group]/route.ts  # Group-specific actions (add, vote, complete, undo)
 ├── components/
 │   ├── UserSelectModal.tsx         # User selection modal
 │   ├── AddAnimeModal.tsx           # Anime search and add modal
 │   └── AnimeCard.tsx               # Anime card display with vote buttons
 ├── lib/
-│   └── dataStore.ts                # JSON file I/O with in-memory fallback
-├── styles/
-│   └── theme.ts                    # Chakra UI theme configuration
-├── data/
-│   └── store.json                  # Persistent state storage
+│   ├── dataStore.ts                # Prisma-backed persistence layer
+│   ├── models.ts                   # Shared domain model definitions
+│   └── prisma.ts                   # Prisma client singleton
+├── prisma/
+│   ├── schema.prisma               # PostgreSQL schema
+│   └── migrations/                 # Prisma migration history
 ├── package.json
 ├── tsconfig.json
 ├── next.config.js

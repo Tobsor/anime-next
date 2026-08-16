@@ -3,7 +3,7 @@ import { readStore, writeStore } from '../../../../lib/dataStore';
 import { countUserVotesForGroup, type AnimeEntry, type Group, type VoteType } from '../../../../lib/models';
 
 export async function GET(_request: Request, { params }: { params: { group: string } }) {
-  const store = readStore();
+  const store = await readStore();
   const group = store.groups.find((entry) => entry.id === params.group);
 
   if (!group) {
@@ -152,7 +152,7 @@ async function handleUndoVote(group: Group, userId: string, animeId: string | nu
 
 export async function POST(request: Request, { params }: { params: { group: string } }) {
   try {
-    const store = readStore();
+    const store = await readStore();
     const groupIndex = store.groups.findIndex((entry) => entry.id === params.group);
 
     if (groupIndex === -1) {
@@ -193,7 +193,7 @@ export async function POST(request: Request, { params }: { params: { group: stri
     }
 
     store.groups[groupIndex] = updatedGroup;
-    writeStore(store);
+    await writeStore(store);
     return NextResponse.json(updatedGroup, { status: 200 });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';

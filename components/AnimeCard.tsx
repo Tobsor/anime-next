@@ -38,11 +38,12 @@ function CheckIcon(props: any) {
   );
 }
 
-export default function AnimeCard({ anime, onAdd, onUp, onDown, onComplete, onUndo, userVote, viewMode = 'detailed' }: { anime: AnimeEntry; onAdd?: () => void; onUp?: () => void; onDown?: () => void; onComplete?: () => void; onUndo?: () => void; userVote?: 'up' | 'down' | null; viewMode?: 'slim' | 'detailed'; }) {
+export default function AnimeCard({ anime, onAdd, onUp, onDown, onComplete, onUndo, userVote, viewMode = 'detailed', isLoading = false, pendingAction = null }: { anime: AnimeEntry; onAdd?: () => void; onUp?: () => void; onDown?: () => void; onComplete?: () => void; onUndo?: () => void; userVote?: 'up' | 'down' | null; viewMode?: 'slim' | 'detailed'; isLoading?: boolean; pendingAction?: 'up' | 'down' | 'complete' | 'undo' | null; }) {
   const hasUpVotes = (anime.votes?.up ?? 0) > 0;
   const hasDownVotes = (anime.votes?.down ?? 0) > 0;
   const isUpActive = userVote === 'up' || hasUpVotes;
   const isDownActive = userVote === 'down' || hasDownVotes;
+  const disableAll = isLoading || !!pendingAction;
 
   const actionGroup = (
     <HStack spacing={2} justify="flex-end">
@@ -51,6 +52,8 @@ export default function AnimeCard({ anime, onAdd, onUp, onDown, onComplete, onUn
           <Button
             aria-label="Upvote"
             onClick={onUp}
+            isLoading={pendingAction === 'up'}
+            isDisabled={disableAll}
             bg={isUpActive ? 'green.500' : 'rgba(17, 24, 39, 0.8)'}
             color={isUpActive ? 'white' : 'gray.200'}
             border="1px solid"
@@ -88,6 +91,8 @@ export default function AnimeCard({ anime, onAdd, onUp, onDown, onComplete, onUn
           <Button
             aria-label="Downvote"
             onClick={onDown}
+            isLoading={pendingAction === 'down'}
+            isDisabled={disableAll}
             bg={isDownActive ? 'red.500' : 'rgba(17, 24, 39, 0.8)'}
             color={isDownActive ? 'white' : 'gray.200'}
             border="1px solid"
@@ -131,6 +136,8 @@ export default function AnimeCard({ anime, onAdd, onUp, onDown, onComplete, onUn
           borderColor="rgba(96, 165, 250, 0.35)"
           icon={<CheckIcon boxSize={4} />}
           onClick={onComplete}
+          isLoading={pendingAction === 'complete'}
+          isDisabled={disableAll}
           w="34px"
           minW="34px"
           h="34px"
@@ -140,7 +147,7 @@ export default function AnimeCard({ anime, onAdd, onUp, onDown, onComplete, onUn
           _active={{ bg: 'rgba(59, 130, 246, 0.35)' }}
         />
       )}
-      {onUndo && userVote && <Button size="sm" variant="ghost" onClick={onUndo}>Undo</Button>}
+      {onUndo && userVote && <Button size="sm" variant="ghost" onClick={onUndo} isLoading={pendingAction === 'undo'} isDisabled={disableAll}>Undo</Button>}
     </HStack>
   );
 

@@ -120,6 +120,7 @@ export default function GroupPage() {
   const [isAddOpen, setAddOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'slim' | 'detailed'>('detailed');
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
+  const [pendingAction, setPendingAction] = useState<{ animeId: string | number; action: 'up' | 'down' | 'complete' | 'undo' } | null>(null);
 
   useEffect(() => {
     if (!groupId) return;
@@ -219,63 +220,79 @@ export default function GroupPage() {
 
   const completeAnime = async (animeId: string | number) => {
     if (!selectedUser) return;
-    const response = await fetch(`/api/group/${groupId}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'complete', payload: { animeId } }),
-    });
+    setPendingAction({ animeId, action: 'complete' });
 
-    if (!response.ok) {
-      toast({ title: 'Failed to complete', status: 'error' });
-      return;
+    try {
+      const response = await fetch(`/api/group/${groupId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'complete', payload: { animeId } }),
+      });
+
+      if (!response.ok) {
+        toast({ title: 'Failed to complete', status: 'error' });
+        return;
+      }
+
+      const updated = await response.json();
+      setCurrentGroup(updated);
+      toast({ title: 'Marked as completed', status: 'success' });
+    } finally {
+      setPendingAction((current) => current && current.animeId === animeId ? null : current);
     }
-
-    const updated = await response.json();
-    setCurrentGroup(updated);
-    toast({ title: 'Marked as completed', status: 'success' });
   };
 
   const handleVote = async (animeId: string | number, type: VoteType) => {
     if (!selectedUser) return;
+    setPendingAction({ animeId, action: type });
 
-    const response = await fetch(`/api/group/${groupId}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'vote',
-        payload: { userId: selectedUser.id, animeId, type },
-      }),
-    });
+    try {
+      const response = await fetch(`/api/group/${groupId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'vote',
+          payload: { userId: selectedUser.id, animeId, type },
+        }),
+      });
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: 'Failed to vote' }));
-      toast({ title: errorData.error || 'Failed to vote', status: 'error' });
-      return;
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Failed to vote' }));
+        toast({ title: errorData.error || 'Failed to vote', status: 'error' });
+        return;
+      }
+
+      const updated = await response.json();
+      setCurrentGroup(updated);
+    } finally {
+      setPendingAction((current) => current && current.animeId === animeId ? null : current);
     }
-
-    const updated = await response.json();
-    setCurrentGroup(updated);
   };
 
   const handleUndoVote = async (animeId: string | number) => {
     if (!selectedUser) return;
+    setPendingAction({ animeId, action: 'undo' });
 
-    const response = await fetch(`/api/group/${groupId}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'undo',
-        payload: { userId: selectedUser.id, animeId },
-      }),
-    });
+    try {
+      const response = await fetch(`/api/group/${groupId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'undo',
+          payload: { userId: selectedUser.id, animeId },
+        }),
+      });
 
-    if (!response.ok) {
-      toast({ title: 'Failed to undo vote', status: 'error' });
-      return;
+      if (!response.ok) {
+        toast({ title: 'Failed to undo vote', status: 'error' });
+        return;
+      }
+
+      const updated = await response.json();
+      setCurrentGroup(updated);
+    } finally {
+      setPendingAction((current) => current && current.animeId === animeId ? null : current);
     }
-
-    const updated = await response.json();
-    setCurrentGroup(updated);
   };
 
   if (!currentGroup) {
@@ -353,6 +370,7 @@ export default function GroupPage() {
                     onUndo={() => handleUndoVote(anime.id)}
                     onComplete={() => completeAnime(anime.id)}
                     userVote={getUserVote(anime.id)}
+                    pendingAction={pendingAction && pendingAction.animeId === anime.id ? pendingAction.action : null}
                   />
                 ))}
               </VStack>
