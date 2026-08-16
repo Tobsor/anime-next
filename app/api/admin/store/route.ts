@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { readStore, writeStore } from '../../../../lib/dataStore';
+import { readStore, writeStore, readStoreDb, writeStoreDb } from '../../../../lib/dataStore';
 import type { Store } from '../../../../lib/models';
 
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? 'admin';
@@ -19,7 +19,17 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  return NextResponse.json(readStore(), { status: 200 });
+  try {
+    if (process.env.DATABASE_URL) {
+      const store = await readStoreDb();
+      return NextResponse.json(store, { status: 200 });
+    }
+
+    return NextResponse.json(readStore(), { status: 200 });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }
 
 export async function POST(request: Request) {
@@ -34,7 +44,13 @@ export async function POST(request: Request) {
     }
 
     const store: Store = { groups: payload.groups };
-    writeStore(store);
+
+    if (process.env.DATABASE_URL) {
+      await writeStoreDb(store);
+    } else {
+      writeStore(store);
+    }
+
     return NextResponse.json({ ok: true }, { status: 200 });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
