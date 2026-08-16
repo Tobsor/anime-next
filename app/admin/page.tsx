@@ -123,97 +123,123 @@ export default function AdminPage() {
 
   if (!authenticated) {
     return (
-      <Box p={6}>
-        <Heading mb={4}>Admin - Enter Password</Heading>
-        <HStack>
-          <Input
-            type="password"
-            placeholder="Admin password"
-            value={adminPass}
-            onChange={(event) => setAdminPass(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter') setAuthenticated(true);
-            }}
-          />
-          <Button onClick={() => setAuthenticated(true)}>Login</Button>
-        </HStack>
+      <Box p={{ base: 4, md: 8 }} minH="100vh">
+        <Box
+          maxW="700px"
+          mx="auto"
+          mt={20}
+          p={8}
+          borderRadius="2xl"
+          bg="rgba(8, 11, 18, 0.72)"
+          borderWidth="1px"
+          borderColor="rgba(167, 139, 250, 0.2)"
+          boxShadow="0 0 0 1px rgba(167, 139, 250, 0.12), 0 18px 42px rgba(91, 82, 229, 0.18)"
+        >
+          <Heading mb={4} color="gray.200" textAlign="center">Admin - Enter Password</Heading>
+          <HStack>
+            <Input
+              type="password"
+              placeholder="Admin password"
+              value={adminPass}
+              onChange={(event) => setAdminPass(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') setAuthenticated(true);
+              }}
+            />
+            <Button onClick={() => setAuthenticated(true)} variant="solid">Login</Button>
+          </HStack>
+        </Box>
       </Box>
     );
   }
 
   return (
-    <Box p={6}>
-      <Heading mb={4}>Admin</Heading>
-      <Tabs>
-        <TabList>
-          <Tab>Groups</Tab>
-          <Tab>Raw JSON</Tab>
-        </TabList>
+    <Box p={{ base: 4, md: 8 }} minH="100vh">
+      <Box maxW="1100px" mx="auto">
+        <Box
+          bg="rgba(8, 11, 18, 0.72)"
+          borderRadius="2xl"
+          border="1px solid"
+          borderColor="rgba(167, 139, 250, 0.2)"
+          boxShadow="0 0 0 1px rgba(167, 139, 250, 0.12), 0 18px 42px rgba(91, 82, 229, 0.18)"
+          p={{ base: 4, md: 6 }}
+        >
+          <Heading mb={4} color="gray.200" textAlign="center">Admin</Heading>
+          <Tabs variant="enclosed-colored">
+            <TabList borderBottom="1px solid" borderColor="rgba(167, 139, 250, 0.2)" mb={4}>
+              <Tab color="gray.300" _selected={{ color: 'white', borderColor: 'brand.400', bg: 'rgba(17, 24, 39, 0.8)' }}>Groups</Tab>
+              <Tab color="gray.300" _selected={{ color: 'white', borderColor: 'brand.400', bg: 'rgba(17, 24, 39, 0.8)' }}>Raw JSON</Tab>
+            </TabList>
 
-        <TabPanels>
-          <TabPanel>
-            <VStack align="stretch" spacing={4}>
-              <Button onClick={addGroup} colorScheme="blue">Add Group</Button>
+            <TabPanels>
+              <TabPanel>
+                <VStack align="stretch" spacing={4}>
+                  <Button onClick={addGroup} variant="solid">Add Group</Button>
 
-              {groups.map((group, groupIndex) => (
-                <Box key={group.id} borderWidth="1px" p={4} borderRadius="md">
-                  <HStack mb={3}>
-                    <Input value={group.id} isReadOnly flex={1} />
-                    <Input
-                      value={group.name}
-                      onChange={(event) => updateGroup(groupIndex, 'name', event.target.value)}
-                      flex={1}
-                    />
-                    <Button colorScheme="red" onClick={() => deleteGroup(groupIndex)}>Delete</Button>
-                  </HStack>
-
-                  <Heading size="sm" mb={2}>Users</Heading>
-                  <VStack align="stretch" mb={3}>
-                    {group.users.map((user, userIndex) => (
-                      <HStack key={`${group.id}-${user.id}`}>
+                  {groups.map((group, groupIndex) => (
+                    <Box key={group.id} borderWidth="1px" p={4} borderRadius="2xl" bg="rgba(15, 20, 31, 0.78)" borderColor="rgba(167, 139, 250, 0.18)" boxShadow="0 0 0 1px rgba(167, 139, 250, 0.08)">
+                      <HStack mb={3} spacing={3}>
+                        <Input value={group.id} isReadOnly flex={1} bg="rgba(10, 15, 23, 0.7)" />
                         <Input
-                          value={user.id}
-                          onChange={(event) => updateUser(groupIndex, userIndex, 'id', event.target.value)}
+                          value={group.name}
+                          onChange={(event) => updateGroup(groupIndex, 'name', event.target.value)}
                           flex={1}
                         />
-                        <Input
-                          value={user.name}
-                          onChange={(event) => updateUser(groupIndex, userIndex, 'name', event.target.value)}
-                          flex={1}
-                        />
-                        <Button colorScheme="red" onClick={() => removeUser(groupIndex, userIndex)}>Remove</Button>
+                        <Button colorScheme="red" onClick={() => deleteGroup(groupIndex)}>Delete</Button>
                       </HStack>
-                    ))}
-                  </VStack>
 
-                  <Button onClick={() => addUser(groupIndex)}>Add User</Button>
-                </Box>
-              ))}
+                      <Heading size="sm" mb={2} color="white">Users</Heading>
+                      <VStack align="stretch" mb={3} spacing={3}>
+                        {group.users.map((user, userIndex) => (
+                          <HStack key={`${group.id}-${user.id}`} spacing={3}>
+                            <Input
+                              value={user.id}
+                              onChange={(event) => updateUser(groupIndex, userIndex, 'id', event.target.value)}
+                              flex={1}
+                            />
+                            <Input
+                              value={user.name}
+                              onChange={(event) => updateUser(groupIndex, userIndex, 'name', event.target.value)}
+                              flex={1}
+                            />
+                            <Button colorScheme="red" onClick={() => removeUser(groupIndex, userIndex)}>Remove</Button>
+                          </HStack>
+                        ))}
+                      </VStack>
 
-              <Button onClick={saveStore} isLoading={loading} colorScheme="green">Save All Changes</Button>
-            </VStack>
-          </TabPanel>
+                      <Button variant="ghost" onClick={() => addUser(groupIndex)}>Add User</Button>
+                    </Box>
+                  ))}
 
-          <TabPanel>
-            <VStack align="stretch" spacing={4}>
-              <Textarea
-                value={JSON.stringify({ groups }, null, 2)}
-                onChange={(event) => {
-                  try {
-                    const parsed = JSON.parse(event.target.value);
-                    setGroups(parsed.groups || []);
-                  } catch (error) {
-                    // ignore invalid JSON while typing
-                  }
-                }}
-                fontFamily="mono"
-                height="480px"
-              />
-              <Button onClick={saveStore} isLoading={loading} colorScheme="green">Save JSON</Button>
-            </VStack>
-          </TabPanel>
-        </TabPanels>
-      </Tabs>
+                  <Button onClick={saveStore} isLoading={loading} variant="solid" colorScheme="green">Save All Changes</Button>
+                </VStack>
+              </TabPanel>
+
+              <TabPanel>
+                <VStack align="stretch" spacing={4}>
+                  <Textarea
+                    value={JSON.stringify({ groups }, null, 2)}
+                    onChange={(event) => {
+                      try {
+                        const parsed = JSON.parse(event.target.value);
+                        setGroups(parsed.groups || []);
+                      } catch (error) {
+                        // ignore invalid JSON while typing
+                      }
+                    }}
+                    fontFamily="mono"
+                    height="480px"
+                    bg="rgba(15, 20, 31, 0.78)"
+                    borderColor="rgba(167, 139, 250, 0.18)"
+                    color="white"
+                  />
+                  <Button onClick={saveStore} isLoading={loading} variant="solid" colorScheme="green">Save JSON</Button>
+                </VStack>
+              </TabPanel>
+            </TabPanels>
+          </Tabs>
+        </Box>
+      </Box>
     </Box>
   );
 }

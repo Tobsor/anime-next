@@ -1,5 +1,10 @@
 export type VoteType = 'up' | 'down';
 
+export type VoteState = {
+  up: number;
+  down: number;
+};
+
 export type User = {
   id: string;
   name: string;
@@ -16,6 +21,7 @@ export type AnimeEntry = {
   title: string;
   coverImage?: string | null;
   genres?: string[];
+  tags?: string[];
   episodes?: number | null;
   startDate?: AnimeStartDate | null;
   votes?: {
@@ -24,7 +30,7 @@ export type AnimeEntry = {
   };
 };
 
-export type UserVoteMap = Record<string, VoteType>;
+export type UserVoteMap = Record<string, VoteState>;
 
 export type Group = {
   id: string;
@@ -49,6 +55,7 @@ export type AniListMediaNode = {
     large?: string | null;
   };
   genres?: string[] | null;
+  tags?: Array<{ name?: string | null }> | null;
   episodes?: number | null;
   startDate?: AnimeStartDate | null;
 };
@@ -59,6 +66,7 @@ export function mapAniListMedia(media: AniListMediaNode): AnimeEntry {
     title: media.title?.english || media.title?.romaji || 'Unknown title',
     coverImage: media.coverImage?.large || null,
     genres: media.genres || [],
+    tags: media.tags?.map((tag) => tag.name).filter((name): name is string => typeof name === 'string') || [],
     episodes: media.episodes ?? null,
     startDate: media.startDate || null,
     votes: { up: 0, down: 0 },
@@ -70,25 +78,26 @@ export function mapAniListSearchResponse(data: any): AnimeEntry[] {
   return items.map((media: AniListMediaNode) => mapAniListMedia(media));
 }
 
-export function toVoteCountMap(votes: Record<string, UserVoteMap> | undefined, userId: string): Record<string, VoteType> {
+export function toVoteCountMap(votes: Record<string, UserVoteMap> | undefined, userId: string): Record<string, VoteState> {
   return votes?.[userId] ?? {};
 }
 
 export function getVoteForAnime(votes: Record<string, UserVoteMap> | undefined, userId: string, animeId: string | number): VoteType | null {
   const userVotes = toVoteCountMap(votes, userId);
-  const key = String(animeId);
-  return userVotes[key] ?? null;
+  const state = userVotes[String(animeId)] ?? { up: 0, down: 0 };
+
+  if (state.up > 0 && state.up >= state.down) return 'up';
+  if (state.down > 0 && state.down > state.up) return 'down';
+  return null;
 }
 
 export function countUserVotesForGroup(votes: Record<string, UserVoteMap> | undefined, userId: string): { up: number; down: number } {
   const userVotes = toVoteCountMap(votes, userId);
-  let up = 0;
-  let down = 0;
-
-  Object.values(userVotes).forEach((vote) => {
-    if (vote === 'up') up += 1;
-    if (vote === 'down') down += 1;
-  });
-
-  return { up, down };
+  return Object.values(userVotes).reduce(
+    (totals, voteState) => ({
+      up: totals.up + (voteState.up ?? 0),
+      down: totals.down + (voteState.down ?? 0),
+    }),
+    { up: 0, down: 0 },
+  );
 }

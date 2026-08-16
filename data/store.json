@@ -4,12 +4,122 @@
       "id": "example-group",
       "name": "Example Group",
       "users": [
-        { "id": "alice", "name": "Alice" },
-        { "id": "bob", "name": "Bob" }
+        {
+          "id": "alice",
+          "name": "Alice"
+        },
+        {
+          "id": "bob",
+          "name": "Bob"
+        }
       ],
-      "plan": [],
-      "completed": [],
-      "votes": {}
+      "plan": [
+        {
+          "id": 16498,
+          "title": "Attack on Titan",
+          "coverImage": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx16498-buvcRTBx4NSm.jpg",
+          "genres": [
+            "Action",
+            "Drama",
+            "Fantasy",
+            "Mystery"
+          ],
+          "episodes": 25,
+          "startDate": {
+            "year": 2013,
+            "month": 4,
+            "day": 7
+          },
+          "votes": {
+            "up": 1,
+            "down": 2
+          }
+        },
+        {
+          "id": 171018,
+          "title": "DAN DA DAN",
+          "coverImage": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx171018-60q1B6GK2Ghb.jpg",
+          "genres": [
+            "Action",
+            "Comedy",
+            "Drama",
+            "Romance",
+            "Sci-Fi",
+            "Supernatural"
+          ],
+          "episodes": 12,
+          "startDate": {
+            "year": 2024,
+            "month": 10,
+            "day": 4
+          },
+          "votes": {
+            "up": 0,
+            "down": 0
+          }
+        },
+        {
+          "id": 178025,
+          "title": "Gachiakuta",
+          "coverImage": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx178025-cWJKEsZynkil.jpg",
+          "genres": [
+            "Action",
+            "Drama",
+            "Fantasy"
+          ],
+          "episodes": 24,
+          "startDate": {
+            "year": 2025,
+            "month": 7,
+            "day": 6
+          },
+          "votes": {
+            "up": 0,
+            "down": 1
+          }
+        }
+      ],
+      "completed": [
+        {
+          "id": 127271,
+          "title": "BELLE",
+          "coverImage": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx127271-juJIu4WFTM8q.png",
+          "genres": [
+            "Drama",
+            "Music",
+            "Mystery",
+            "Sci-Fi"
+          ],
+          "episodes": 1,
+          "startDate": {
+            "year": 2021,
+            "month": 7,
+            "day": 16
+          },
+          "votes": {
+            "up": 2,
+            "down": 1
+          }
+        }
+      ],
+      "votes": {
+        "alice": {
+          "16498": {
+            "up": 1,
+            "down": 2
+          },
+          "127271": {
+            "up": 0,
+            "down": 1
+          }
+        },
+        "bob": {
+          "178025": {
+            "up": 0,
+            "down": 1
+          }
+        }
+      }
     }
   ]
 }

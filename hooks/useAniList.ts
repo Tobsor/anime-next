@@ -16,6 +16,9 @@ const SEARCH_QUERY = `
           large
         }
         genres
+        tags {
+          name
+        }
         episodes
         startDate {
           year

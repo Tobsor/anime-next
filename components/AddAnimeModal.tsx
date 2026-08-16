@@ -45,9 +45,15 @@ export default function AddAnimeModal({ isOpen, onClose, onAdd }: { isOpen: bool
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="xl">
-      <ModalOverlay />
-      <ModalContent>
-        <ModalHeader>Add anime</ModalHeader>
+      <ModalOverlay bg="rgba(2, 4, 10, 0.72)" />
+      <ModalContent
+        bg="rgba(10, 14, 22, 0.92)"
+        border="1px solid"
+        borderColor="rgba(167, 139, 250, 0.22)"
+        borderRadius="2xl"
+        boxShadow="0 0 0 1px rgba(167, 139, 250, 0.12), 0 18px 48px rgba(91, 82, 229, 0.25)"
+      >
+        <ModalHeader color="white">Add anime</ModalHeader>
         <ModalBody>
           <VStack spacing={4} align="stretch">
             <Input
@@ -60,9 +66,9 @@ export default function AddAnimeModal({ isOpen, onClose, onAdd }: { isOpen: bool
                 }
               }}
             />
-            <Button onClick={() => void search()} isLoading={loading}>Search</Button>
-            {loading && <Spinner mx="auto" />}
-            {!loading && results.length === 0 && q && <Text color="gray.500">No results found</Text>}
+            <Button onClick={() => void search()} isLoading={loading} variant="solid">Search</Button>
+            {loading && <Spinner mx="auto" color="brand.300" />}
+            {!loading && results.length === 0 && q && <Text color="gray.400">No results found</Text>}
             <VStack width="100%" align="stretch" spacing={3}>
               {results.map((anime) => (
                 <AnimeCard
@@ -78,7 +84,7 @@ export default function AddAnimeModal({ isOpen, onClose, onAdd }: { isOpen: bool
           </VStack>
         </ModalBody>
         <ModalFooter>
-          <Button onClick={onClose}>Close</Button>
+          <Button variant="ghost" onClick={onClose}>Close</Button>
         </ModalFooter>
       </ModalContent>
     </Modal>
