@@ -1,0 +1,15 @@
+{
+  "groups": [
+    {
+      "id": "example-group",
+      "name": "Example Group",
+      "users": [
+        { "id": "alice", "name": "Alice" },
+        { "id": "bob", "name": "Bob" }
+      ],
+      "plan": [],
+      "completed": [],
+      "votes": {}
+    }
+  ]
+}
