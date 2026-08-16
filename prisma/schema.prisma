@@ -1,0 +1,56 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum AnimeStatus {
+  PLAN
+  COMPLETED
+}
+
+model Group {
+  id     String  @id
+  name   String
+  users  User[]
+  animes Anime[]
+}
+
+model User {
+  id      String  @id
+  name    String
+  group   Group?  @relation(fields: [groupId], references: [id])
+  groupId String?
+  votes   Vote[]
+}
+
+model Anime {
+  id         String      @id
+  title      String
+  coverImage String?
+  genres     Json?
+  tags       Json?
+  episodes   Int?
+  startDate  Json?
+  votesUp    Int         @default(0)
+  votesDown  Int         @default(0)
+  status     AnimeStatus @default(PLAN)
+  group      Group       @relation(fields: [groupId], references: [id])
+  groupId    String
+  votes      Vote[]
+}
+
+model Vote {
+  id      Int    @id @default(autoincrement())
+  user    User   @relation(fields: [userId], references: [id])
+  userId  String
+  anime   Anime  @relation(fields: [animeId], references: [id])
+  animeId String
+  up      Int    @default(0)
+  down    Int    @default(0)
+
+  @@unique([userId, animeId])
+}
