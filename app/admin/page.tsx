@@ -34,14 +34,42 @@ export default function AdminPage() {
   const loadStore = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/admin/store');
-      if (!response.ok) throw new Error('Failed to load store');
+      const response = await fetch('/api/admin/store', {
+        headers: {
+          'x-admin-password': adminPass,
+        },
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({ error: 'Failed to load store' }));
+        throw new Error(data.error || 'Failed to load store');
+      }
+
       const data = await response.json();
       setGroups(data.groups || []);
     } catch (error) {
-      toast({ title: 'Failed to load admin store', status: 'error' });
+      toast({ title: error instanceof Error ? error.message : 'Failed to load admin store', status: 'error' });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const login = async () => {
+    try {
+      const response = await fetch('/api/admin/store', {
+        headers: {
+          'x-admin-password': adminPass,
+        },
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({ error: 'Unauthorized' }));
+        throw new Error(data.error || 'Unauthorized');
+      }
+
+      setAuthenticated(true);
+    } catch (error) {
+      toast({ title: error instanceof Error ? error.message : 'Authentication failed', status: 'error' });
     }
   };
 
@@ -143,10 +171,12 @@ export default function AdminPage() {
               value={adminPass}
               onChange={(event) => setAdminPass(event.target.value)}
               onKeyDown={(event) => {
-                if (event.key === 'Enter') setAuthenticated(true);
+                if (event.key === 'Enter') {
+                  void login();
+                }
               }}
             />
-            <Button onClick={() => setAuthenticated(true)} variant="solid">Login</Button>
+            <Button onClick={() => void login()} variant="solid">Login</Button>
           </HStack>
         </Box>
       </Box>
