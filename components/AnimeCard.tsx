@@ -156,6 +156,8 @@ export default function AnimeCard({ anime, onAdd, onUp, onDown, onComplete, onUn
       <Box
         borderWidth="1px"
         borderRadius="2xl"
+        flexShrink={0}
+        minH="72px"
         overflowX="auto"
         overflowY="hidden"
         p={3}
@@ -202,6 +204,8 @@ export default function AnimeCard({ anime, onAdd, onUp, onDown, onComplete, onUn
     <Box
       borderWidth="1px"
       borderRadius="2xl"
+      flexShrink={0}
+      minH={{ base: '156px', md: '172px' }}
       overflow="hidden"
       p={3}
       bg="rgba(12, 16, 24, 0.75)"

@@ -358,7 +358,7 @@ export default function GroupPage() {
                   <MultiFilter label="Tags" options={allGenres} selected={selectedGenres} onChange={setSelectedGenres} />
                 </Box>
               </HStack>
-              <VStack align="stretch" spacing={3} maxH="70vh" overflowY="auto" pr={1}>
+              <VStack align="stretch" spacing={3} pr={1}>
                 {sortedPlan.length === 0 && <Text color="gray.400">No items yet</Text>}
                 {sortedPlan.map((anime) => (
                   <AnimeCard
@@ -378,7 +378,7 @@ export default function GroupPage() {
 
             <VStack flex={1} align="stretch" minW="100%">
               <Heading size="md" color="gray.200" px={1} textAlign="center">Completed</Heading>
-              <VStack align="stretch" spacing={3} maxH="70vh" overflowY="auto" pr={1}>
+              <VStack align="stretch" spacing={3} pr={1}>
                 {currentGroup.completed.length === 0 && <Text color="gray.400">No completed items</Text>}
                 {currentGroup.completed.map((anime) => (
                   <AnimeCard key={anime.id} anime={anime} viewMode={viewMode} />
