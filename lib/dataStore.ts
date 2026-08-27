@@ -1,5 +1,5 @@
 import { Prisma } from '@prisma/client';
-import type { Store, Group, User, AnimeEntry } from './models';
+import type { StoredStore, StoredGroup, User, StoredAnimeEntry } from './models';
 import { prisma } from './prisma';
 
 function buildGroupVotes(group: any): Record<string, Record<string, { up: number; down: number }>> {
@@ -24,7 +24,7 @@ function buildGroupVotes(group: any): Record<string, Record<string, { up: number
   return voteMap;
 }
 
-function mapDbGroupToStore(group: any): Group {
+function mapDbGroupToStore(group: any): StoredGroup {
   return {
     id: group.id,
     name: group.name,
@@ -57,11 +57,11 @@ function mapDbGroupToStore(group: any): Group {
   };
 }
 
-export async function readStore(): Promise<Store> {
+export async function readStore(): Promise<StoredStore> {
   return readStoreDb();
 }
 
-export async function readStoreDb(): Promise<Store> {
+export async function readStoreDb(): Promise<StoredStore> {
   const groups = await prisma.group.findMany({
     include: {
       users: true,
@@ -74,7 +74,7 @@ export async function readStoreDb(): Promise<Store> {
   return { groups: groups.map(mapDbGroupToStore) };
 }
 
-function normalizeAnimeEntry(anime: AnimeEntry) {
+function normalizeAnimeEntry(anime: StoredAnimeEntry): StoredAnimeEntry {
   return {
     id: String(anime.id),
     title: anime.title,
@@ -86,7 +86,7 @@ function normalizeAnimeEntry(anime: AnimeEntry) {
   };
 }
 
-export async function writeStoreDb(store: Store) {
+export async function writeStoreDb(store: StoredStore) {
   const targetGroupIds = (store.groups || []).map((group) => group.id);
 
   await prisma.$transaction(async (tx) => {
@@ -242,8 +242,8 @@ export async function writeStoreDb(store: Store) {
   });
 }
 
-export async function writeStore(store: Store) {
+export async function writeStore(store: StoredStore) {
   return writeStoreDb(store);
 }
 
-export type { Store, Group, User, AnimeEntry } from './models';
+export type { StoredStore, StoredGroup, User, StoredAnimeEntry } from './models';

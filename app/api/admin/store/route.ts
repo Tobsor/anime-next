@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { readStore, writeStore } from '../../../../lib/dataStore';
-import type { Store } from '../../../../lib/models';
+import type { StoredStore } from '../../../../lib/models';
 
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? 'admin';
 
@@ -34,12 +34,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const payload = (await request.json()) as { groups?: Store['groups'] };
+    const payload = (await request.json()) as { groups?: StoredStore['groups'] };
     if (!Array.isArray(payload.groups)) {
       return NextResponse.json({ error: 'Invalid store payload' }, { status: 400 });
     }
 
-    const store: Store = { groups: payload.groups };
+    const store: StoredStore = { groups: payload.groups };
     await writeStore(store);
 
     return NextResponse.json({ ok: true }, { status: 200 });

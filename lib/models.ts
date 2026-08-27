@@ -20,6 +20,8 @@ export type AnimeEntry = {
   id: number | string;
   title: string;
   coverImage?: string | null;
+  description?: string | null;
+  siteUrl?: string | null;
   genres?: string[];
   tags?: string[];
   episodes?: number | null;
@@ -31,6 +33,10 @@ export type AnimeEntry = {
 };
 
 export type UserVoteMap = Record<string, VoteState>;
+
+export type StoredAnimeEntry = Omit<AnimeEntry, 'id' | 'description' | 'siteUrl'> & {
+  id: string;
+};
 
 export type Group = {
   id: string;
@@ -45,6 +51,15 @@ export type Store = {
   groups: Group[];
 };
 
+export type StoredGroup = Omit<Group, 'plan' | 'completed'> & {
+  plan: StoredAnimeEntry[];
+  completed: StoredAnimeEntry[];
+};
+
+export type StoredStore = {
+  groups: StoredGroup[];
+};
+
 export type AniListMediaNode = {
   id: number;
   title?: {
@@ -54,17 +69,26 @@ export type AniListMediaNode = {
   coverImage?: {
     large?: string | null;
   };
+  description?: string | null;
+  siteUrl?: string | null;
   genres?: string[] | null;
   tags?: Array<{ name?: string | null }> | null;
   episodes?: number | null;
   startDate?: AnimeStartDate | null;
 };
 
+export function stripHtml(value?: string | null): string | null {
+  if (!value) return null;
+  return value.replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '').replace(/\s+\n/g, '\n').trim();
+}
+
 export function mapAniListMedia(media: AniListMediaNode): AnimeEntry {
   return {
     id: media.id,
     title: media.title?.english || media.title?.romaji || 'Unknown title',
     coverImage: media.coverImage?.large || null,
+    description: stripHtml(media.description),
+    siteUrl: media.siteUrl || null,
     genres: media.genres || [],
     tags: media.tags?.map((tag) => tag.name).filter((name): name is string => typeof name === 'string') || [],
     episodes: media.episodes ?? null,

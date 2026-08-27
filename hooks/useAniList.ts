@@ -15,6 +15,8 @@ const SEARCH_QUERY = `
         coverImage {
           large
         }
+        description(asHtml: false)
+        siteUrl
         genres
         tags {
           name

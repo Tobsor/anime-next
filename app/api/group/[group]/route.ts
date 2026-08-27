@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { readStore, writeStore } from '../../../../lib/dataStore';
-import { countUserVotesForGroup, type AnimeEntry, type Group, type VoteType } from '../../../../lib/models';
+import { enrichGroupWithAniListDetails } from '../../../../lib/anilist';
+import { countUserVotesForGroup, type AnimeEntry, type StoredAnimeEntry, type StoredGroup, type VoteType } from '../../../../lib/models';
 
 export async function GET(_request: Request, { params }: { params: { group: string } }) {
   const store = await readStore();
@@ -10,10 +11,10 @@ export async function GET(_request: Request, { params }: { params: { group: stri
     return NextResponse.json({ error: 'Group not found' }, { status: 404 });
   }
 
-  return NextResponse.json(group, { status: 200 });
+  return NextResponse.json(await enrichGroupWithAniListDetails(group), { status: 200 });
 }
 
-function normalizeAnimePayload(rawAnime: Partial<AnimeEntry> | undefined): AnimeEntry {
+function normalizeAnimePayload(rawAnime: Partial<AnimeEntry> | undefined): StoredAnimeEntry {
   if (!rawAnime || typeof rawAnime !== 'object') {
     throw new Error('Invalid anime payload');
   }
@@ -22,7 +23,7 @@ function normalizeAnimePayload(rawAnime: Partial<AnimeEntry> | undefined): Anime
   const id = rawAnime.id ?? `anime-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
   return {
-    id,
+    id: String(id),
     title,
     coverImage: rawAnime.coverImage ?? null,
     genres: Array.isArray(rawAnime.genres) ? rawAnime.genres.filter((genre): genre is string => typeof genre === 'string') : [],
@@ -35,14 +36,14 @@ function normalizeAnimePayload(rawAnime: Partial<AnimeEntry> | undefined): Anime
   };
 }
 
-async function handleAddAnime(group: Group, anime: AnimeEntry | undefined) {
+async function handleAddAnime(group: StoredGroup, anime: AnimeEntry | undefined): Promise<StoredGroup> {
   const normalizedAnime = normalizeAnimePayload(anime);
   const plan = Array.isArray(group.plan) ? group.plan : [];
 
   return { ...group, plan: [...plan, normalizedAnime] };
 }
 
-async function handleCompleteAnime(group: Group, animeId: string | number) {
+async function handleCompleteAnime(group: StoredGroup, animeId: string | number): Promise<StoredGroup> {
   const plan = Array.isArray(group.plan) ? group.plan : [];
   const completed = Array.isArray(group.completed) ? group.completed : [];
   const nextPlan = plan.filter((anime) => String(anime.id) !== String(animeId));
@@ -72,7 +73,7 @@ async function handleCompleteAnime(group: Group, animeId: string | number) {
   };
 }
 
-async function handleVote(group: Group, userId: string, animeId: string | number, type: VoteType) {
+async function handleVote(group: StoredGroup, userId: string, animeId: string | number, type: VoteType): Promise<StoredGroup> {
   const safePlan = Array.isArray(group.plan) ? group.plan : [];
   const userVotes = group.votes?.[userId] ?? {};
   const animeVotes = userVotes[String(animeId)] ?? { up: 0, down: 0 };
@@ -116,7 +117,7 @@ async function handleVote(group: Group, userId: string, animeId: string | number
   };
 }
 
-async function handleUndoVote(group: Group, userId: string, animeId: string | number) {
+async function handleUndoVote(group: StoredGroup, userId: string, animeId: string | number): Promise<StoredGroup> {
   const userVotes = group.votes?.[userId] ?? {};
   const animeVotes = userVotes[String(animeId)] ?? { up: 0, down: 0 };
   const userUpVotes = Math.max(0, animeVotes.up ?? 0);
@@ -161,7 +162,7 @@ export async function POST(request: Request, { params }: { params: { group: stri
 
     const body = await request.json();
     const { action, payload } = body ?? {};
-    let updatedGroup: Group;
+    let updatedGroup: StoredGroup;
 
     switch (action) {
       case 'add':
@@ -194,7 +195,7 @@ export async function POST(request: Request, { params }: { params: { group: stri
 
     store.groups[groupIndex] = updatedGroup;
     await writeStore(store);
-    return NextResponse.json(updatedGroup, { status: 200 });
+    return NextResponse.json(await enrichGroupWithAniListDetails(updatedGroup), { status: 200 });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json({ error: message }, { status: 500 });
