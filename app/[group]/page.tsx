@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
+import Image from 'next/image';
 import {
   Box,
   Heading,
@@ -302,6 +303,12 @@ export default function GroupPage() {
   return (
     <Box p={{ base: 4, md: 8 }} minH="100vh">
       <Box maxW="1200px" mx="auto" pt={4}>
+        <HStack justify="center" spacing={3} mb={8}>
+          <Image src="/logo.png" alt="" width={56} height={56} style={{ objectFit: 'contain' }} />
+          <Text color="accent.400" fontSize={{ base: 'lg', md: 'xl' }} fontWeight="600" letterSpacing="0.15em" textTransform="uppercase">
+            Anime Next
+          </Text>
+        </HStack>
         <Box
           bg="rgba(8, 11, 18, 0.72)"
           borderRadius="2xl"

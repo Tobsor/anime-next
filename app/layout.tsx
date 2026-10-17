@@ -4,6 +4,9 @@ import AppProviders from './providers';
 export const metadata: Metadata = {
   title: 'Anime Next',
   description: 'Group anime watching decision app',
+  icons: {
+    icon: { url: '/favicon.png', type: 'image/png' },
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
