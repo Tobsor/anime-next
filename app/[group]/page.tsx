@@ -210,8 +210,8 @@ export default function GroupPage() {
     });
 
     if (!response.ok) {
-      toast({ title: 'Failed to add anime', status: 'error' });
-      return;
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || 'Failed to add anime');
     }
 
     const updated = await response.json();

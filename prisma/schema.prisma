@@ -28,7 +28,7 @@ model User {
 }
 
 model Anime {
-  id         String      @id
+  id         String
   title      String
   coverImage String?
   genres     Json?
@@ -41,16 +41,19 @@ model Anime {
   group      Group       @relation(fields: [groupId], references: [id])
   groupId    String
   votes      Vote[]
+
+  @@id([groupId, id])
 }
 
 model Vote {
   id      Int    @id @default(autoincrement())
   user    User   @relation(fields: [userId], references: [id])
   userId  String
-  anime   Anime  @relation(fields: [animeId], references: [id])
+  anime   Anime  @relation(fields: [groupId, animeId], references: [groupId, id])
+  groupId String
   animeId String
   up      Int    @default(0)
   down    Int    @default(0)
 
-  @@unique([userId, animeId])
+  @@unique([groupId, userId, animeId])
 }

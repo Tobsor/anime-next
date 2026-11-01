@@ -86,160 +86,130 @@ function normalizeAnimeEntry(anime: StoredAnimeEntry): StoredAnimeEntry {
   };
 }
 
-export async function writeStoreDb(store: StoredStore) {
-  const targetGroupIds = (store.groups || []).map((group) => group.id);
+export async function addAnimeToGroup(groupId: string, anime: StoredAnimeEntry) {
+  const entry = normalizeAnimeEntry(anime);
 
-  await prisma.$transaction(async (tx) => {
-    const staleGroups = await tx.group.findMany({
-      where: {
-        id: {
-          notIn: targetGroupIds.length > 0 ? targetGroupIds : ['__none__'],
-        },
-      },
-    });
+  // A single insert avoids the full-store transaction and leaves existing votes
+  // and completion status intact when a request is retried.
+  await prisma.anime.createMany({
+    data: [{
+      id: entry.id,
+      title: entry.title,
+      coverImage: entry.coverImage,
+      genres: entry.genres,
+      tags: entry.tags,
+      episodes: entry.episodes,
+      startDate: entry.startDate ? (entry.startDate as Prisma.InputJsonValue) : Prisma.JsonNull,
+      status: 'PLAN',
+      groupId,
+    }],
+    skipDuplicates: true,
+  });
 
-    for (const staleGroup of staleGroups) {
-      await tx.vote.deleteMany({
-        where: {
-          OR: [{ user: { groupId: staleGroup.id } }, { anime: { groupId: staleGroup.id } }],
-        },
-      });
-      await tx.anime.deleteMany({ where: { groupId: staleGroup.id } });
-      await tx.user.deleteMany({ where: { groupId: staleGroup.id } });
-      await tx.group.delete({ where: { id: staleGroup.id } });
+  const group = await prisma.group.findUnique({
+    where: { id: groupId },
+    include: { users: true, animes: { include: { votes: true } } },
+  });
+  if (!group) throw new Error('Group not found');
+  return mapDbGroupToStore(group);
+}
+
+async function persistGroups(store: StoredStore, replaceAll: boolean) {
+  const operations: Prisma.PrismaPromise<unknown>[] = [];
+  const groups = store.groups || [];
+  const targetGroupIds = groups.map((group) => group.id);
+
+  if (replaceAll) {
+    const staleGroup = { notIn: targetGroupIds };
+    operations.push(
+      prisma.vote.deleteMany({ where: { OR: [
+        { groupId: staleGroup },
+        { user: { groupId: staleGroup } },
+      ] } }),
+      prisma.anime.deleteMany({ where: { groupId: staleGroup } }),
+      prisma.user.deleteMany({ where: { groupId: staleGroup } }),
+      prisma.group.deleteMany({ where: { id: staleGroup } }),
+    );
+  }
+
+  for (const group of groups) {
+    const userIds = (group.users || []).map((user) => user.id);
+    const entries = new Map<string, { anime: StoredAnimeEntry; status: 'PLAN' | 'COMPLETED' }>();
+    for (const anime of group.completed || []) {
+      entries.set(String(anime.id), { anime, status: 'COMPLETED' });
+    }
+    for (const anime of group.plan || []) {
+      entries.set(String(anime.id), { anime, status: 'PLAN' });
+    }
+    const animeIds = [...entries.keys()];
+    const votes: Prisma.VoteCreateManyInput[] = [];
+    const totals = new Map<string, { up: number; down: number }>();
+    for (const [userId, voteMap] of Object.entries(group.votes ?? {})) {
+      if (!userIds.includes(userId)) continue;
+      for (const [animeId, state] of Object.entries(voteMap ?? {})) {
+        if (!entries.has(animeId)) continue;
+        const up = Number(state?.up ?? 0);
+        const down = Number(state?.down ?? 0);
+        votes.push({ groupId: group.id, userId, animeId, up, down });
+        const total = totals.get(animeId) ?? { up: 0, down: 0 };
+        totals.set(animeId, { up: total.up + up, down: total.down + down });
+      }
     }
 
-    for (const group of store.groups || []) {
-      await tx.group.upsert({
+    operations.push(
+      prisma.group.upsert({
         where: { id: group.id },
         update: { name: group.name },
         create: { id: group.id, name: group.name },
-      });
+      }),
+      prisma.vote.deleteMany({ where: { groupId: group.id } }),
+      prisma.vote.deleteMany({ where: { user: { groupId: group.id, id: { notIn: userIds } } } }),
+      prisma.user.deleteMany({ where: { groupId: group.id, id: { notIn: userIds } } }),
+      prisma.anime.deleteMany({ where: { groupId: group.id, id: { notIn: animeIds } } }),
+    );
 
-      const userIds = (group.users || []).map((user) => user.id);
-      const existingUsers = await tx.user.findMany({ where: { groupId: group.id } });
-      const staleUsers = existingUsers.filter((user) => !userIds.includes(user.id));
-
-      for (const staleUser of staleUsers) {
-        await tx.vote.deleteMany({ where: { userId: staleUser.id } });
-        await tx.user.delete({ where: { id: staleUser.id } });
-      }
-
-      for (const user of group.users || []) {
-        await tx.user.upsert({
-          where: { id: user.id },
-          update: { name: user.name, groupId: group.id },
-          create: { id: user.id, name: user.name, groupId: group.id },
-        });
-      }
-
-      const animeEntries = [...(group.plan || []), ...(group.completed || [])];
-      const animeIds = animeEntries.map((anime) => String(anime.id));
-      const existingAnimes = await tx.anime.findMany({ where: { groupId: group.id } });
-      const staleAnimes = existingAnimes.filter((anime) => !animeIds.includes(anime.id));
-
-      for (const staleAnime of staleAnimes) {
-        await tx.vote.deleteMany({ where: { animeId: staleAnime.id } });
-        await tx.anime.delete({ where: { id: staleAnime.id } });
-      }
-
-      for (const anime of animeEntries) {
-        const status = (group.plan || []).some((planAnime) => String(planAnime.id) === String(anime.id)) ? 'PLAN' : 'COMPLETED';
-        const entry = normalizeAnimeEntry(anime);
-        const startDateValue = entry.startDate ? (entry.startDate as Prisma.InputJsonValue) : Prisma.JsonNull;
-
-        await tx.anime.upsert({
-          where: { id: String(anime.id) },
-          update: {
-            title: entry.title,
-            coverImage: entry.coverImage,
-            genres: entry.genres,
-            tags: entry.tags,
-            episodes: entry.episodes,
-            startDate: startDateValue,
-            status,
-            groupId: group.id,
-          },
-          create: {
-            id: entry.id,
-            title: entry.title,
-            coverImage: entry.coverImage,
-            genres: entry.genres,
-            tags: entry.tags,
-            episodes: entry.episodes,
-            startDate: startDateValue,
-            status,
-            groupId: group.id,
-          },
-        });
-      }
-
-      const validVotes = new Map<string, { up: number; down: number }>();
-      for (const [userId, voteMap] of Object.entries(group.votes ?? {})) {
-        for (const [animeId, voteState] of Object.entries(voteMap ?? {})) {
-          validVotes.set(`${userId}::${animeId}`, {
-            up: Number(voteState?.up ?? 0),
-            down: Number(voteState?.down ?? 0),
-          });
-        }
-      }
-
-      const existingVotes = await tx.vote.findMany({
-        where: {
-          user: { groupId: group.id },
-          anime: { groupId: group.id },
-        },
-      });
-
-      const staleVoteIds = existingVotes
-        .filter((vote) => !validVotes.has(`${vote.userId}::${vote.animeId}`))
-        .map((vote) => vote.id);
-
-      if (staleVoteIds.length > 0) {
-        await tx.vote.deleteMany({ where: { id: { in: staleVoteIds } } });
-      }
-
-      for (const [voteKey, voteState] of validVotes.entries()) {
-        const [userId, animeId] = voteKey.split('::');
-        if (!userId || !animeId) continue;
-
-        await tx.vote.upsert({
-          where: {
-            userId_animeId: {
-              userId,
-              animeId,
-            },
-          },
-          update: {
-            up: voteState.up,
-            down: voteState.down,
-          },
-          create: {
-            userId,
-            animeId,
-            up: voteState.up,
-            down: voteState.down,
-          },
-        });
-      }
-
-      for (const anime of animeEntries) {
-        const animeId = String(anime.id);
-        const totals = await tx.vote.aggregate({
-          where: { animeId },
-          _sum: { up: true, down: true },
-        });
-
-        await tx.anime.update({
-          where: { id: animeId },
-          data: {
-            votesUp: totals._sum.up ?? 0,
-            votesDown: totals._sum.down ?? 0,
-          },
-        });
-      }
+    for (const user of group.users || []) {
+      operations.push(prisma.user.upsert({
+        where: { id: user.id },
+        update: { name: user.name, groupId: group.id },
+        create: { id: user.id, name: user.name, groupId: group.id },
+      }));
     }
-  });
+
+    for (const [id, { anime, status }] of entries) {
+      const entry = normalizeAnimeEntry(anime);
+      const total = totals.get(id) ?? { up: 0, down: 0 };
+      const data = {
+        title: entry.title,
+        coverImage: entry.coverImage,
+        genres: entry.genres,
+        tags: entry.tags,
+        episodes: entry.episodes,
+        startDate: entry.startDate ? (entry.startDate as Prisma.InputJsonValue) : Prisma.JsonNull,
+        status,
+        votesUp: total.up,
+        votesDown: total.down,
+      };
+      operations.push(prisma.anime.upsert({
+        where: { groupId_id: { groupId: group.id, id } },
+        update: data,
+        create: { ...data, id, groupId: group.id },
+      }));
+    }
+    if (votes.length) operations.push(prisma.vote.createMany({ data: votes }));
+  }
+
+  // Queue the writes as one atomic batch, without the interactive transaction's
+  // short callback deadline or per-anime aggregate queries.
+  await prisma.$transaction(operations);
+}
+
+export async function writeGroup(group: StoredGroup) {
+  return persistGroups({ groups: [group] }, false);
+}
+
+export async function writeStoreDb(store: StoredStore) {
+  return persistGroups(store, true);
 }
 
 export async function writeStore(store: StoredStore) {

@@ -51,6 +51,8 @@ export default function AddAnimeModal({ isOpen, onClose, onAdd }: { isOpen: bool
     try {
       await onAdd(anime);
       onClose();
+    } catch (error) {
+      toast({ title: error instanceof Error ? error.message : 'Failed to add anime', status: 'error' });
     } finally {
       setIsSubmitting(false);
     }

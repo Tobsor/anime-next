@@ -46,11 +46,20 @@ A Next.js + React web app that lets groups of people collaboratively decide what
 # Install dependencies
 npm install
 
+# Apply database migrations (DATABASE_URL must point to PostgreSQL)
+npx prisma migrate deploy
+npx prisma generate
+
 # Start development server
 npm run dev
 ```
 
 The app will be available at `http://localhost:3000`
+
+Anime IDs are unique within each group. The same AniList title can appear in
+multiple groups with independent votes and completion status. When updating an
+existing installation, stop the server, apply migrations, regenerate the Prisma
+client, and restart the server (or rebuild for production).
 
 ### Access the App
 
